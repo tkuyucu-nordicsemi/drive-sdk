@@ -26,7 +26,7 @@ Discovering Vehicles
 ====================
 
 Vehicles broadcast identifying information and service definitions in the form of advertising packets.
-An advertising packet contains binary data in a parseable format defined by a generic attribute profile (GATT).
+An advertising packet contains binary data in a parsable format defined by a generic attribute profile (GATT).
 Depending on the API implemented on the central, this information may be exposed in different ways.
 On iOS, [CoreBluetooth][] parses this data internally and provides an NSDictionary containing the profile data.
 On Linux and Android, the raw scan bytes are exposed via the API, and must be parsed to obtain the GATT profile data members of interest.
@@ -46,10 +46,10 @@ extract vehicle information from specific types of records.
 
 ### Advertisement Data Format
 
-Each vehicle has a unique identifier, which is available in the manufaturer data member (0xff) of the advertising packet.
+Each vehicle has a unique identifier, which is available in the manufacturer data member (0xff) of the advertising packet.
 Vehicle advertisements consist of the Drive service UUID, along with a unique identifier, name and state information.
 
-```C
+~~~c
 /**
  * Vehicle information present in Bluetooth LE advertising packets.
  *
@@ -66,24 +66,24 @@ typedef struct anki_vehicle_adv {
     anki_vehicle_adv_info_t     local_name;
     uuid128_t                   service_id;
 } anki_vehicle_adv_t;
-```
+~~~
 
 The `service_id` for an Anki Drive vehicle is defined in the GATT profile for the vehicle, and will always by a 128-bit UUID.
 This UUID can be used to identify vehicles during scanning, or as a handle to discover the read and write characteristics after connecting to a vehicle.
 
-```
+~~~c
 #define ANKI_STR_SERVICE_UUID       "BE15BEEF-6186-407E-8381-0BD89C4D8DF4"
-``` 
+~~~
 
-The manufactorer data contains a uint64_t value that uniquely identifies each vehicle.
+The manufacturer data contains a uint64_t value that uniquely identifies each vehicle.
 This value contains information identifying the 'make/model' of the car, which can be used for display purposes.
 
-```C
+~~~c
 /**
- * Vehicle hardware information encodeded in the MANUFACTURER_DATA
+ * Vehicle hardware information encoded in the MANUFACTURER_DATA
  * record of an advertising packet.
  *
- * - identifier: Unique identifer for a physical vehicle
+ * - identifier: Unique identifier for a physical vehicle
  * - model_id: The model type of a vehicle
  * - product_id: Value identifying the vehicle as Anki Drive hardware
  */
@@ -93,7 +93,7 @@ typedef struct anki_vehicle_adv_mfg {
     uint8_t     _reserved;
     uint16_t    product_id;
 } anki_vehicle_adv_mfg_t;
-```
+~~~
 
 The LOCAL_NAME field contains information about the vehicle state in addition to a
 user-defined vehicle name.
@@ -104,7 +104,7 @@ but all other information is optional.
 This should be accounted for when [parsing the data][sdk-parsing].
 As a result of this strategy, the LOCAL_NAME data of a vehicle may change during repeated advertisements if, for example, a car is removed from a charger.
 
-```C
+~~~c
 /**
  * Vehicle information packed in the LOCAL_NAME string record
  * of an advertising packet.
@@ -136,7 +136,7 @@ typedef struct anki_vehicle_adv_state {
   uint8_t on_charger:1;      // 6: TRUE if Car is on Charger
   uint8_t _unavailable:1;    // 7: UNUSED to avoid NULL string 
 } anki_vehicle_adv_state_t;
-```
+~~~
 
 
 Connecting to Vehicles
@@ -162,13 +162,13 @@ Three steps are required to establish bi-directional communication with a vehicl
 3.  Discover characteristics of the vehicle service and register for notifications on the inbound (read) characteristic.
 
     This step registers the read and write characteristics for the vehicle service, and makes them available for data transfer.
-    To register for notifications when data is written from the vehicle, it is necessary to set a bit on the Client Configuration Characteristc. This step is [abstracted by CoreBluetooth][cb-set-notify] on Apple platforms. When using the [BlueZ][] API, it is necessary to set this value directly.
-    See the [vehicle-tool][] example utility for an example.
+    To register for notifications when data is written from the vehicle, it is necessary to set a bit on the Client Configuration Characteristic. This step is [abstracted by CoreBluetooth][cb-set-notify] on Apple platforms. When using the [BlueZ][] API, it is necessary to set this value directly.
+    See the [vehicle-tool][vehicle-tool-notify] example utility for an example.
 
 
 [cb-set-notify]: https://developer.apple.com/library/ios/documentation/CoreBluetooth/Reference/CBPeripheral_Class/translated_content/CBPeripheral.html#//apple_ref/occ/instm/CBPeripheral/setNotifyValue:forCharacteristic:
 
-[vehicle-tool]: https://github.com/anki/drive-sdk/blob/master/examples/vehicle-tool/vehicle_cmd.c#L241
+[vehicle-tool-notify]: https://github.com/anki/drive-sdk/blob/master/examples/vehicle-tool/vehicle_cmd.c#L241
 
 
 
@@ -178,13 +178,13 @@ Once these steps are complete, it is possible to send and receive data from the 
 
 ### Anki Vehicle GATT profile
 
-Anki Drive Vehicles implement a Generic Attibute profile (GATT) that defines how
+Anki Drive Vehicles implement a Generic Attribute profile (GATT) that defines how
 attributes can be transmitted to and from the vehicle.
 These data are provided in [vehicle_gatt_profile.h][vehicle-gatt-profile], and also summarized below.
 
 [vehicle-gatt-profile]: https://github.com/anki/drive-sdk/blob/master/include/ankidrive/vehicle_gatt_profile.h  
 
-```
+~~~c
 /** Anki Drive Vehicle Service UUID */
 #define ANKI_STR_SERVICE_UUID       "BE15BEEF-6186-407E-8381-0BD89C4D8DF4"
 
@@ -193,11 +193,11 @@ These data are provided in [vehicle_gatt_profile.h][vehicle-gatt-profile], and a
 
 /** Anki Drive Vehicle Service WRITE Characteristic */
 #define ANKI_STR_CHR_WRITE_UUID     "BE15BEE1-6186-407E-8381-0BD89C4D8DF4"
-```
+~~~
 
 ### Best Practices for Connecting to Vehicles
 
-The Anki Drive app connects to multiple vehicles and iOS devices simulataneously.
+The Anki Drive app connects to multiple vehicles and iOS devices simultaneously.
 Furthermore, both vehicles and devices send data at the fastest possible rate.
 This is in contrast to many other Bluetooth LE devices, which may advertise infrequently
 or sparingly send data in order to save power.
@@ -206,13 +206,13 @@ To minimize problems caused by this particular use case, we found it useful to a
 
 #### Serialize connection attempts
 
-Do not attempt to perform multiple connections simulataneously.
+Do not attempt to perform multiple connections simultaneously.
 Instead, serialize all connection attempts, so that connection, service discovery and characteristic discovery for one peripheral are completed before attempting to establish another connection.
 
 #### Avoid connections while scanning
 
-It is possible to connect to peripherals while simulataneously scanning.
-However, our empircal evidence on iOS suggests that the connection procedure is more robust if scanning is not in progress.
+It is possible to connect to peripherals while simultaneously scanning.
+However, our empirical evidence on iOS suggests that the connection procedure is more robust if scanning is not in progress.
 
 
 Vehicle Message Protocol 
@@ -226,13 +226,18 @@ The current message format is designed for low-bandwidth wireless transmission p
 Each message must begin with a 2-byte sequence specifying the message size, and identifier.
 Certain types of messages may require up to 18 bytes of additional data for a maximum size of 20 bytes.
 
-```C
-+---------------------------+--------+------------+
-| size_of(msg_id + payload) | msg_id | payload    |
-+---------------------------+--------+------------+
-|        1 byte             | 1 byte | 0-18 bytes |
-+---------------------------+--------+------------+
+#### Vehicle Message Packet Structure
 
+     +---------------------------+--------+------------+
+     | size_of(msg_id + payload) | msg_id | payload    |
+     +---------------------------+--------+------------+
+     |        1 byte             | 1 byte | 0-18 bytes |
+     +---------------------------+--------+------------+
+
+
+The message data structure is represented as a C struct that encapsulates data for vehicle communications.
+
+~~~c 
 /**
  * Basic vehicle message.
  *
@@ -246,23 +251,21 @@ Certain types of messages may require up to 18 bytes of additional data for a ma
 #define ANKI_VEHICLE_MSG_PAYLOAD_MAX_SIZE    18
 #define ANKI_VEHICLE_MSG_BASE_SIZE            1
 
-struct anki_vehicle_msg {
+typedef struct anki_vehicle_msg {
     uint8_t size;
     uint8_t msg_id;
     uint8_t payload[ANKI_VEHICLE_MSG_PAYLOAD_MAX_SIZE];
-};
-typedef struct anki_vehicle_msg anki_vehicle_msg_t;
-```
+} anki_vehicle_msg_t;
+~~~
 
 ### Message Types
 
 Each message or command is identifier by a unique 1-byte identifier.
 This value identifies the command that the vehicle should perform and is also used to determine whether addition data parameters are required. 
 Because message identifiers are shared with code running on the vehicle, they are inherently linked to the firmware version running on the vehicle.
-Although we do not expect these to change frequently, any changes that do occur in the furture may break compatibility with pre-1.0 releases of the SDK.
+Although we do not expect these to change frequently, any changes that do occur in the future may break compatibility with pre-1.0 releases of the SDK.
 
-```C
-
+~~~c
 /** Identifier for a vehicle message */
 enum {
     // BLE Connections
@@ -291,7 +294,7 @@ enum {
     // SDK Mode
     ANKI_VEHICLE_MSG_C2V_SDK_MODE = 0x90,
 };
-```
+~~~
 
 
 ### Messages with parameters
@@ -306,11 +309,11 @@ These methods allow callers to control memory allocation, but provide an abstrac
 
 Anki Drive vehicles have a special mode that allows the commands listed above to be used without any additional data or overhead that is required control vehicles in the Anki Drive iOS app.  To enable this mode, send the vehicle a message with the `ANKI_VEHICLE_MSG_C2V_SDK_MODE`. This can be easily created using one of the message helper methods.
 
-```C
+~~~c
 anki_vehicle_msg_t msg;
-memset(&msg, 0, sizeof(anki_vehicle_msg_t);
+memset(&msg, 0, sizeof(anki_vehicle_msg_t));
 uint8_t size = anki_vehicle_msg_set_sdk_mode(&msg, 1);
-```
+~~~
 
 In this example `anki_vehicle_msg_set_sdk_mode` writes `{ 0x02, 0x90, 0x01 }` to `msg` and returns 3.
 Both the buffer and size, should be passed to a function that sends 3 bytes from the buffer to vehicle.
@@ -320,17 +323,17 @@ Both the buffer and size, should be passed to a function that sends 3 bytes from
 
 The procedure for creating a message to set the vehicle speed is similar.
 
-```C
+~~~c
 anki_vehicle_msg_t msg;
-memset(&msg, 0, sizeof(anki_vehicle_msg_t);
+memset(&msg, 0, sizeof(anki_vehicle_msg_t));
 uint8_t size = anki_vehicle_msg_set_speed(&msg, 1000, 25000);
-```
+~~~
 
 All of the available functions are listed in [protocol.h][protocol_h].
-For more examples of how to use these functions and send data, see the [vehicle-tool][] example utility.
+For more examples of how to use these functions and send data, see the [vehicle-tool][vehicle-tool-cmd] example utility.
 
 [protocol_h]: https://github.com/anki/drive-sdk/blob/master/include/ankidrive/protocol.h
-
+[vehicle-tool-cmd]: https://github.com/anki/drive-sdk/blob/master/examples/vehicle-tool/vehicle_cmd.c#L471
 
 Revision History
 ================
