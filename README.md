@@ -8,7 +8,7 @@ The Anki Drive SDK is licensed under the Apache 2.0 license. Projects in the `ex
 - website: http://developer.anki.com/drive-sdk
 - StackOverflow Tag: anki-drive-sdk
 - Issues: [GitHub Issues](https://github.com/anki/drive-sdk/issues)
-- Programming Guide: http://developer.anki.com/drive-sdk/programming-guide
+- Programming Guide: http://developer.anki.com/drive-sdk/docs/programming-guide
 - Mailing list: [Anki-Dev Google Group](https://groups.google.com/a/anki.com/forum/#!forum/anki-dev)
 
 [bluez]: http://www.bluez.org/
