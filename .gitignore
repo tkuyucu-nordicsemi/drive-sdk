@@ -1,5 +1,16 @@
-build/
-*.o
+_site/*
+_theme_packages/*
+vendor/
+.bundle
 
-*~
+Thumbs.db
+.DS_Store
+
+!.gitkeep
+
+.rbenv-version
+.rvmrc
+
+#editors
 *.swp
+~*

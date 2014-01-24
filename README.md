@@ -1,60 +1,70 @@
-Anki Drive SDK
-==============
+# Anki Developer Website
 
-The Anki Drive SDK is a C implementation of the message protocols and data parsing routines necessary for communicating with Anki Drive vehicles. 
+This is the data for the Anki Developer site.
+It is auto-generated from markdown source files
+using [jekyll](http://jekyllrb.com/), a static site generator.
 
-The Anki Drive SDK is licensed under the Apache 2.0 license. Projects in the `examples` folder are released under separate licenses.
+## Building the site
 
-- website: http://developer.anki.com/DriveSDK
-- StackOverflow Tag: anki-drive-sdk
-- Issues: [GitHub Issues](https://github.com/anki/DriveSDK/issues)
-- Programming Guide: http://developer.anki.com/DriveSDK/programming-guide
-- Mailing list: [Anki-Dev Google Group](https://groups.google.com/a/anki.com/forum/#!forum/anki-dev)
+### Prerequisites
 
-[bluez]: http://www.bluez.org/
+To build the site locally, you'll need to install some prerequisites:
 
-Features
-========
+- [bundler ruby gem](http://bundler.io/)
+- [pandoc](http://johnmacfarlane.net/pandoc/)
 
-The initial release of the SDK has the minimal number of functions required to use the message protocol and parse information sent by vehicles.
+You can download and install pandoc from [here](http://johnmacfarlane.net/pandoc/installing.html).
 
-* Parse vehicle info from Bluetooth LE `LOCAL_NAME` and `MANUFACTURER_DATA` advertisement data.
-* Create messages to send commands to vehicles.
-* Parse vehicle response messages.
+To install bundler, type:
+```
+[sudo] gem install bundler
+```
 
-The initial version provides a limited subset of the message protocol.
-We hope to expand available messages and functionality in the future, once we can do so in a safe and stable way.
+Once bundler is installed, you can use it to install jekyll and other dependencies:
 
-Optional dependencies
-=====================
+```
+cd anki.github.io
+bundle install --path vendor/bundle
+``` 
 
-* [BlueZ][bluez] for example linux utilities. See `examples` folder.
+### Build the site
 
-Building the SDK
-================
+```
+# build the site
+bundle exec jekyll build
 
-The Anki Drive SDK builds cleanly on Mac OS X and most linux distributions.
-The SDK builds the `libankidrive` library, with public headers available in `include`.
+# start a webserver for testing
+bundle exec jekyll server
+```
 
-The SDK is built using `CMake 2.8` (<http://www.cmake.org>) on all platforms.
+## Development workflow
 
-     $ mkdir -p build && cd build
+Edit the text files in Vim, emacs or your editor of choice.
+If you're using a mac, we highly recommend [Marked](http://markedapp.com/).
+It allows you to preview the HTML live while you edit, which helps
+to avoid any formatting errors.
 
-     # build library
-     $ cmake ..
-     $ make
+You can tell jekyll to auto-build when changes are detected and
+run the webserver to preview the results.
 
-     # build library + examples
-     # set path to compiled bluez source
-     $ export BLUEZ_ROOT=/path/to/bluez
-     $ cmake .. -DBUILD_EXAMPLES=ON
-     $ make
+```
+bundle exec jekyll server -w &
 
+# kill the backgrounded processes when you're finished
+jobs
 
+# in the commands below, m and n represent the numbers for each
+# of the backgrounded process
+kill %n
+```
 
-### Run Unit Tests
+## License
 
-     $ cd build
-     $ ./test/Test
+The following directories and their contents are Copyright Anki, Inc.
+You may not use anything therein without permission from Anki, Inc.
 
+- `_posts`
+- `assets/anki`
 
+The [Jekyll-bootstrap](https://github.com/dbtek/jekyll-bootstrap-3) files in `_includes/JB` are MIT licensed.
+All other directories and files are under the [Apache 2.0 License](http://www.apache.org/licenses/LICENSE-2.0.html).
