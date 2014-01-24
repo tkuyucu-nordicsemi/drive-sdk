@@ -9,6 +9,7 @@ tagline:
 
 <h1>Anki Drive SDK 0.1 Beta</h1>
 <br />
+
 ## Introduction
 
 This document is the starting point for creating software to interact with Anki Drive vehicles. It describes the message protocols and data formats required to communicate with vehicles and offers practical guidance for using these structures to build simple applications on any platform that supports Bluetooth low energy wireless technology (BLE, Bluetooth LE, Bluetooth 4.0).
