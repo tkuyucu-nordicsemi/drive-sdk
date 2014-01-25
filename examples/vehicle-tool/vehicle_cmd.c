@@ -619,7 +619,8 @@ anki_vehicle_light_channel_t get_channel_by_name(const char *name)
 
         uint8_t count = sizeof(channels_by_name)/sizeof(channels_by_name[0]);
         for (i = 0; i < count; i++) {
-                if (strncmp(name, channels_by_name[i], sizeof(channels_by_name[i])) == 0) {
+                uint8_t len = MAX(strlen(name), strlen(channels_by_name[i]));
+                if (strncmp(name, channels_by_name[i], len) == 0) {
                     channel = i;
                     break;
                 }
@@ -668,7 +669,17 @@ static void cmd_anki_vehicle_lights_pattern(int argcp, char **argvp)
         handle = vehicle.write_char.value_handle;
 
         uint8_t channel = get_channel_by_name(argvp[1]);
+        if (channel == channel_invalid) {
+            rl_printf("Unrecognized channel: %s\n", argvp[1]);
+            return;
+        } 
+
         uint8_t effect = get_effect_by_name(argvp[2]);
+        if (effect == effect_invalid) {
+            rl_printf("Unrecognized channel: %s\n", argvp[2]); 
+            return;
+        }
+
         uint8_t start = atoi(argvp[3]);
         uint8_t end = atoi(argvp[4]);
         uint16_t cycles_per_min = atoi(argvp[5]);
