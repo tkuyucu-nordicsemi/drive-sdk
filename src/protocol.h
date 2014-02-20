@@ -107,8 +107,8 @@ typedef struct anki_vehicle_msg_change_lane {
     uint8_t     msg_id;
     uint16_t    horizontal_speed_mm_per_sec;
     float       offset_from_road_center_mm;
-    uint8_t     _reserved0;
-    uint8_t     _reserved1;
+    uint8_t     hop_intent;
+    uint8_t     tag;
 } ATTRIBUTE_PACKED anki_vehicle_msg_change_lane_t;
 #define ANKI_VEHICLE_MSG_C2V_CHANGE_LANE_SIZE    9
 
