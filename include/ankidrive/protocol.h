@@ -101,6 +101,7 @@ typedef struct anki_vehicle_msg_set_offset_from_road_center {
     uint8_t     msg_id;
     float       offset_mm;
 } ATTRIBUTE_PACKED anki_vehicle_msg_set_offset_from_road_center_t;
+#define ANKI_VEHICLE_MSG_C2V_SET_OFFSET_FROM_ROAD_CENTER_SIZE   5
 
 typedef struct anki_vehicle_msg_change_lane {
     uint8_t     size;
