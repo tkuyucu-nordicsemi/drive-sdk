@@ -331,7 +331,7 @@ uint8_t anki_vehicle_msg_get_version(anki_vehicle_msg_t *);
 /**
  * Create a message to request the vehicle battery level.
  *
- * The vehicle will respond with a anki_vehivle_msg_battery_level_response_t 
+ * The vehicle will respond with a anki_vehicle_msg_battery_level_response_t
  * message.
  *
  * @param msg A pointer to the vehicle message struct to be written.
