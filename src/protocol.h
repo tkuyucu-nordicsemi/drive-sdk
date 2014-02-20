@@ -40,6 +40,10 @@ enum {
     ANKI_VEHICLE_MSG_C2V_VERSION_REQUEST = 0x18,
     ANKI_VEHICLE_MSG_V2C_VERSION_RESPONSE = 0x19,
 
+    // Battery level
+    ANKI_VEHICLE_MSG_C2V_BATTERY_LEVEL_REQUEST = 0x1a,
+    ANKI_VEHICLE_MSG_V2C_BATTERY_LEVEL_RESPONSE = 0x1b,
+
     // Lights
     ANKI_VEHICLE_MSG_C2V_SET_LIGHTS = 0x1d,
 
@@ -79,6 +83,13 @@ typedef struct anki_vehicle_msg_version_response {
     uint16_t    version;
 } ATTRIBUTE_PACKED anki_vehicle_msg_version_response_t;
 #define ANKI_VEHICLE_MSG_V2C_VERSION_RESPONSE_SIZE   3
+
+typedef struct anki_vehicle_msg_battery_level_response {
+    uint8_t     size;
+    uint8_t     msg_id;
+    uint16_t    battery_level;
+} ATTRIBUTE_PACKED anki_vehicle_msg_battery_level_response_t;
+#define ANKI_VEHICLE_MSG_V2C_BATTERY_LEVEL_RESPONSE_SIZE  3
 
 typedef struct anki_vehicle_msg_sdk_mode {
     uint8_t     size;
@@ -284,6 +295,18 @@ uint8_t anki_vehicle_msg_ping(anki_vehicle_msg_t *msg);
  * @return size of bytes written to msg
  */
 uint8_t anki_vehicle_msg_get_version(anki_vehicle_msg_t *);
+
+/**
+ * Create a message to request the vehicle battery level.
+ *
+ * The vehicle will respond with a anki_vehivle_msg_battery_level_response_t 
+ * message.
+ *
+ * @param msg A pointer to the vehicle message struct to be written.
+ *
+ * @return size of bytes written to msg
+ */
+uint8_t anki_vehicle_msg_get_battery_level(anki_vehicle_msg_t *);
 
 /**
  * Create a message to cancel a requested lane change.
