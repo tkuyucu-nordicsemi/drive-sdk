@@ -55,10 +55,10 @@ enum {
     ANKI_VEHICLE_MSG_C2V_SET_OFFSET_FROM_ROAD_CENTER = 0x2c,
 
     // Vehicle position notifications
-    ANKI_VEHICLE_MSG_V2C_POSITION_SPEED = 0x27,
-    ANKI_VEHICLE_MSG_V2C_OFFSET_FROM_ROAD_CENTER = 0x29,
-    ANKI_VEHICLE_MSG_V2C_CAR_OFF_TRACK = 0x2b,
-    ANKI_VEHICLE_MSG_V2C_CAR_AT_TRACK_EDGE = 0x2d,
+    ANKI_VEHICLE_MSG_V2C_LOCALIZATION_POSITION_UPDATE = 0x27,
+    ANKI_VEHICLE_MSG_V2C_LOCALIZATION_TRANSITION_UPDATE = 0x29,
+    ANKI_VEHICLE_MSG_V2C_VEHICLE_DELOCALIZED = 0x2b,
+    ANKI_VEHICLE_MSG_V2C_OFFSET_FROM_ROAD_CENTER_UPDATE = 0x2d,
 
     // Light Patterns
     ANKI_VEHICLE_MSG_C2V_LIGHTS_PATTERN = 0x33,
@@ -130,32 +130,32 @@ typedef struct anki_vehicle_msg_change_lane {
 } ATTRIBUTE_PACKED anki_vehicle_msg_change_lane_t;
 #define ANKI_VEHICLE_MSG_C2V_CHANGE_LANE_SIZE    9
 
-typedef struct anki_vehicle_msg_position_speed {
+typedef struct anki_vehicle_msg_localization_position_update {
     uint8_t     size;
     uint8_t     msg_id;
     uint8_t     _reserved[2];
     float       offset_from_road_center_mm;
     uint16_t    speed_mm_per_sec;
     uint8_t     is_clockwise;
-} ATTRIBUTE_PACKED anki_vehicle_msg_position_speed_t;
-#define ANKI_VEHICLE_MSG_V2C_POSITION_SPEED_SIZE  10
+} ATTRIBUTE_PACKED anki_vehicle_msg_localization_position_update_t;
+#define ANKI_VEHICLE_MSG_V2C_LOCALIZATION_POSITION_UPDATE_SIZE  10
 
-typedef struct anki_vehicle_msg_offset_from_road_center {
+typedef struct anki_vehicle_msg_localization_transition_update {
     uint8_t     size;
     uint8_t     msg_id;
     uint8_t     _reserved;
     float       offset_from_road_center_mm;
     uint8_t     is_clockwise;
-} ATTRIBUTE_PACKED anki_vehicle_msg_offset_from_road_center_t;
-#define ANKI_VEHICLE_MSG_V2C_OFFSET_FROM_ROAD_CENTER_SIZE  7
+} ATTRIBUTE_PACKED anki_vehicle_msg_localization_transition_update_t;
+#define ANKI_VEHICLE_MSG_V2C_LOCALIZATION_TRANSITION_UPDATE_SIZE  7
 
-typedef struct anki_vehicle_msg_car_at_track_edge {
+typedef struct anki_vehicle_msg_offset_from_road_center_update {
     uint8_t     size;
     uint8_t     msg_id;
     float       offset_from_road_center_mm;
     uint8_t     _reserved;
-} ATTRIBUTE_PACKED anki_vehicle_msg_car_at_track_edge_t;
-#define ANKI_VEHICLE_MSG_V2C_CAR_AT_TRACK_EDGE_SIZE  6
+} ATTRIBUTE_PACKED anki_vehicle_msg_offset_from_road_center_update_t;
+#define ANKI_VEHICLE_MSG_V2C_OFFSET_FROM_ROAD_CENTER_UPDATE_SIZE  6
 
 // Lights
 // The bits in the simple light message (ANKI_VEHICLE_MSG_C2V_SET_LIGHTS) corresponding to
