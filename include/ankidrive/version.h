@@ -17,9 +17,9 @@
 #ifndef INCLUDE_ankidrive_vehicle_h__
 #define INCLUDE_ankidrive_vehicle_h__
 
-#define ANKIDRIVESDK_VERSION        "0.1.0"
+#define ANKIDRIVESDK_VERSION        "0.2.0"
 #define ANKIDRIVESDK_VER_MAJOR      0
-#define ANKIDRIVESDK_VER_MINOR      1
+#define ANKIDRIVESDK_VER_MINOR      2
 #define ANKIDRIVESDK_VER_REVISION   0
 
 #endif
