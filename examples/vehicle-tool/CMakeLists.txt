@@ -25,4 +25,7 @@ target_link_libraries(vehicle-tool
                     bzle
                     ${GLIB2_LIBRARIES}
                     ${READLINE_LIBRARY}
-                    )
+)
+install(TARGETS vehicle-tool 
+    RUNTIME DESTINATION bin
+)

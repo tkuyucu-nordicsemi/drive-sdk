@@ -15,4 +15,8 @@ add_executable(vehicle-scan ${vehiclescan_SOURCES})
 target_link_libraries(vehicle-scan
                     ankidrive
                     bzle
-                    )
+)
+
+install(TARGETS vehicle-scan 
+    RUNTIME DESTINATION bin
+)

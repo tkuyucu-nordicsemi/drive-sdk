@@ -11,3 +11,5 @@ macro_ensure_out_of_source_build("${PROJECT_NAME} requires an out of source buil
  
 add_subdirectory(src)
 add_subdirectory(tools)
+
+install(DIRECTORY include/bzle DESTINATION include)

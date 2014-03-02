@@ -16,3 +16,8 @@ add_library(bzle ${bzle_SOURCES})
 target_link_libraries(bzle
                     ${GLIB2_LIBRARIES}
                     )
+
+install(TARGETS bzle 
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)

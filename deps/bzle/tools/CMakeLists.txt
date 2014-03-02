@@ -16,3 +16,6 @@ target_link_libraries(hciconfig
                     bzle
                     )
 
+install(TARGETS hciconfig 
+    RUNTIME DESTINATION bin
+)
