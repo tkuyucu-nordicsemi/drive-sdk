@@ -56,16 +56,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
-#include <bluetooth/hci_lib.h>
+#include <bzle/bluetooth/bluetooth.h>
+#include <bzle/bluetooth/hci.h>
+#include <bzle/bluetooth/hci_lib.h>
 
-#include "lib/uuid.h"
-#include "att.h"
-#include <btio/btio.h>
-#include "gattrib.h"
-#include "gatt.h"
-#include "utils.h"
+#include <bzle/bluetooth/uuid.h>
+#include <bzle/gatt/att.h>
+#include <bzle/bluetooth/btio.h>
+#include <bzle/gatt/gattrib.h>
+#include <bzle/gatt/gatt.h>
+#include <bzle/gatt/utils.h>
 
 static char *opt_src = NULL;
 static char *opt_dst = NULL;

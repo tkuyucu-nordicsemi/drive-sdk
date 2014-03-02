@@ -63,9 +63,9 @@
 
 #define for_each_opt(opt, long, short) while ((opt=getopt_long(argc, argv, short ? short:"+", long, NULL)) != -1)
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
-#include <bluetooth/hci_lib.h>
+#include <bzle/bluetooth/bluetooth.h>
+#include <bzle/bluetooth/hci.h>
+#include <bzle/bluetooth/hci_lib.h>
 
 #include "uthash.h"
 

@@ -33,7 +33,7 @@
 
 #include "log.h"
 
-#define VERSION "5.12"
+#define VERSION "5.15"
 
 void info(const char *format, ...)
 {

@@ -63,13 +63,13 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-#include "lib/uuid.h"
-#include <btio/btio.h>
-#include "att.h"
-#include "gattrib.h"
-#include "gatt.h"
-#include "utils.h"
-#include "client/display.h"
+#include <bzle/bluetooth/uuid.h>
+#include <bzle/bluetooth/btio.h>
+#include <bzle/gatt/att.h>
+#include <bzle/gatt/gattrib.h>
+#include <bzle/gatt/gatt.h>
+#include <bzle/gatt/utils.h>
+#include "display.h"
 
 #include <ankidrive.h>
 
@@ -227,7 +227,7 @@ static void disconnect_io()
 	set_state(STATE_DISCONNECTED);
 }
 
-static void discover_char_cb(GSList *characteristics, guint8 status, gpointer user_data)
+static void discover_char_cb(guint8 status, GSList *characteristics, gpointer user_data)
 {
 	GSList *l;
 
@@ -342,8 +342,7 @@ static void cmd_disconnect(int argcp, char **argvp)
 }
 
 // Discover Services
-static void discover_services_cb(GSList *ranges, guint8 status,
-                                                        gpointer user_data)
+static void discover_services_cb(guint8 status, GSList *ranges, gpointer user_data)
 {
         GSList *l;
 

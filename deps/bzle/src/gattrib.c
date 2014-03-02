@@ -33,13 +33,14 @@
 
 #include <stdio.h>
 
-#include <bluetooth/bluetooth.h>
-#include <btio/btio.h>
+#include <bzle/bluetooth/bluetooth.h>
 
-#include "lib/uuid.h"
+#include <bzle/bluetooth/btio.h>
+#include <bzle/bluetooth/uuid.h>
+#include <bzle/gatt/att.h>
+#include <bzle/gatt/gattrib.h>
+
 #include "log.h"
-#include "att.h"
-#include "gattrib.h"
 
 #define GATT_TIMEOUT 30
 

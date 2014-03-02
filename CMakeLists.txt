@@ -14,6 +14,7 @@ macro_ensure_out_of_source_build("${PROJECT_NAME} requires an out of source buil
 add_subdirectory(src)
 add_subdirectory(test)
 if (BUILD_EXAMPLES)
+    add_subdirectory(deps/bzle)
     add_subdirectory(examples)
 endif ()
 

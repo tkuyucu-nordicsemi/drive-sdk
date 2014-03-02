@@ -28,17 +28,16 @@
 #include <stdlib.h>
 #include <glib.h>
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
-#include <bluetooth/hci_lib.h>
-#include <bluetooth/sdp.h>
+#include <bzle/bluetooth/bluetooth.h>
+#include <bzle/bluetooth/hci.h>
+#include <bzle/bluetooth/hci_lib.h>
+#include <bzle/bluetooth/sdp.h>
 
-#include "lib/uuid.h"
-#include <btio/btio.h>
-#include "att.h"
-#include "gattrib.h"
-#include "gatt.h"
-#include "utils.h"
+#include <bzle/bluetooth/uuid.h>
+#include <bzle/bluetooth/btio.h>
+#include <bzle/gatt/att.h>
+#include <bzle/gatt/gattrib.h>
+#include <bzle/gatt/gatt.h>
 
 GIOChannel *gatt_connect(const char *src, const char *dst,
 				const char *dst_type, const char *sec_level,

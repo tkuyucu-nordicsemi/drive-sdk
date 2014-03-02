@@ -22,7 +22,10 @@
  *
  */
 
-#include <bluetooth/sdp.h>
+#ifndef __GATT_H
+#define __GATT_H
+
+#include <bzle/bluetooth/sdp.h>
 
 /* GATT Profile Attribute types */
 #define GATT_PRIM_SVC_UUID		0x2800
@@ -53,7 +56,7 @@
 #define GATT_CLIENT_CHARAC_CFG_NOTIF_BIT	0x0001
 #define GATT_CLIENT_CHARAC_CFG_IND_BIT		0x0002
 
-typedef void (*gatt_cb_t) (GSList *l, guint8 status, gpointer user_data);
+typedef void (*gatt_cb_t) (uint8_t status, GSList *l, void *user_data);
 
 struct gatt_primary {
 	char uuid[MAX_LEN_UUID_STR + 1];
@@ -107,3 +110,6 @@ guint gatt_exchange_mtu(GAttrib *attrib, uint16_t mtu, GAttribResultFunc func,
 gboolean gatt_parse_record(const sdp_record_t *rec,
 					uuid_t *prim_uuid, uint16_t *psm,
 					uint16_t *start, uint16_t *end);
+
+
+#endif
