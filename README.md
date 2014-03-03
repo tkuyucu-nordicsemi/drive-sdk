@@ -5,13 +5,14 @@ The Anki Drive SDK is a C implementation of the message protocols and data parsi
 
 The Anki Drive SDK is licensed under the Apache 2.0 license. Projects in the `examples` folder are released under separate licenses.
 
-- website: http://developer.anki.com/drive-sdk
+- web: http://developer.anki.com/drive-sdk
 - StackOverflow Tag: anki-drive-sdk
 - Issues: [GitHub Issues](https://github.com/anki/drive-sdk/issues)
-- Programming Guide: http://developer.anki.com/drive-sdk/docs/programming-guide
+- Guides: [Getting Started on Ubuntu][ubuntu-getting-started], [Programming Guide][]
 - Mailing list: [Anki-Dev Google Group](https://groups.google.com/a/anki.com/forum/#!forum/anki-dev)
 
-[bluez]: http://www.bluez.org/
+[Programming Guide]: http://developer.anki.com/drive-sdk/docs/programming-guide
+
 
 Features
 ========
@@ -28,7 +29,12 @@ We hope to expand available messages and functionality in the future, once we ca
 Optional dependencies
 =====================
 
-* [BlueZ][bluez] for example linux utilities. See `examples` folder.
+* Building the example programs for linux requires [glib2][] and [libreadline][].
+  See the guide to [Getting Started on Ubuntu][ubuntu-getting-started] for more info.
+
+[ubuntu-getting-started]: https://github.com/anki/drive-sdk/wiki/Getting-Started-on-Ubuntu
+[glib2]: http://www.gtk.org/
+[libreadline]: http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html
 
 Building the SDK
 ================
@@ -40,21 +46,24 @@ The SDK is built using `CMake 2.8` (<http://www.cmake.org>) on all platforms.
 
      $ mkdir -p build && cd build
 
-     # build library
+     # build & test library
      $ cmake ..
      $ make
+     $ make test
 
-     # build library + examples
-     # set path to compiled bluez source
-     $ export BLUEZ_ROOT=/path/to/bluez
+     # build library + examples (examples currently require Linux)
      $ cmake .. -DBUILD_EXAMPLES=ON
      $ make
-
+     $ make test
+     $ make install
+     # install creates a build/dist/bin folder containing executables
 
 
 ### Run Unit Tests
 
      $ cd build
-     $ ./test/Test
+     $ cmake ..
+     $ make
+     $ make test
 
 
