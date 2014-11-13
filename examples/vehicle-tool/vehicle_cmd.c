@@ -513,7 +513,7 @@ static void cmd_anki_vehicle_sdk_mode(int argcp, char **argvp)
         int arg = atoi(argvp[1]);
 
         anki_vehicle_msg_t msg;
-        plen = anki_vehicle_msg_set_sdk_mode(&msg, arg);
+        plen = anki_vehicle_msg_set_sdk_mode(&msg, arg, ANKI_VEHICLE_SDK_OPTION_OVERRIDE_LOCALIZATION);
         value = (uint8_t *)&msg;
 
         gatt_write_char(attrib, handle, value, plen,

@@ -22,7 +22,7 @@
 
 #define ANKI_VEHICLE_MSG_TYPE_SIZE  2
 
-uint8_t anki_vehicle_msg_set_sdk_mode(anki_vehicle_msg_t *message, uint8_t on)
+uint8_t anki_vehicle_msg_set_sdk_mode(anki_vehicle_msg_t *message, uint8_t on, uint8_t flags)
 {
     assert(message != NULL);
 
@@ -31,6 +31,7 @@ uint8_t anki_vehicle_msg_set_sdk_mode(anki_vehicle_msg_t *message, uint8_t on)
     msg->size = ANKI_VEHICLE_MSG_SDK_MODE_SIZE;
     msg->msg_id = ANKI_VEHICLE_MSG_C2V_SDK_MODE;
     msg->on = on;
+    msg->flags = flags;
 
     return sizeof(anki_vehicle_msg_sdk_mode_t);
 }
