@@ -74,6 +74,110 @@ TEST test_change_lane(void) {
     PASS();
 }
 
+TEST test_light_config(void) {
+    anki_vehicle_light_config_t config;
+    memset(&config, 0, sizeof(anki_vehicle_light_config_t));
+    //uint8_t size = anki_vehicle_light_config(&config, LIGHT_RED, EFFECT_THROB, 0, 20, 5);
+    anki_vehicle_light_config(&config, LIGHT_RED, EFFECT_THROB, 0, 10, 10);
+    ASSERT(config.cycles_per_10_sec > 0);
+
+    anki_vehicle_msg_lights_pattern_t msg;
+    memset(&msg, 0, sizeof(anki_vehicle_msg_lights_pattern_t));
+
+    const uint8_t size = anki_vehicle_msg_lights_pattern_append(&msg, &config);
+    ASSERT_EQ(size, sizeof(config));
+
+    ASSERT_EQ(msg.msg_id, ANKI_VEHICLE_MSG_C2V_LIGHTS_PATTERN);
+    ASSERT_EQ(msg.size, ANKI_VEHICLE_MSG_C2V_LIGHTS_PATTERN_SIZE);
+    ASSERT_EQ(msg.channel_count, 1);
+    ASSERT_BYTES_EQ(&(msg.channel_config[0]), &config, sizeof(config));
+
+    PASS();
+}
+
+// Regression test against a STEADY LIGHT_BLUE, max intensity
+TEST test_lights_steady_blue(void) {
+    anki_vehicle_msg_lights_pattern_t msg;
+    memset(&msg, 0, sizeof(anki_vehicle_msg_lights_pattern_t));
+
+    uint8_t intensity = ANKI_VEHICLE_MAX_LIGHT_INTENSITY;
+    uint8_t cycles_per_min = 0;
+
+    anki_vehicle_light_config_t config;
+    {
+        memset(&config, 0, sizeof(anki_vehicle_light_config_t));
+        anki_vehicle_light_config(&config, LIGHT_RED, EFFECT_STEADY, 0, 0, cycles_per_min);
+        uint8_t append_size = anki_vehicle_msg_lights_pattern_append(&msg, &config);
+        ASSERT_EQ(append_size, sizeof(config));
+        ASSERT_EQ(msg.channel_count, 1);
+    }
+    {
+        memset(&config, 0, sizeof(anki_vehicle_light_config_t));
+        anki_vehicle_light_config(&config, LIGHT_GREEN, EFFECT_STEADY, 0, 0, cycles_per_min);
+        uint8_t append_size = anki_vehicle_msg_lights_pattern_append(&msg, &config);
+        ASSERT_EQ(append_size, sizeof(config));
+        ASSERT_EQ(msg.channel_count, 2);
+    }
+    {
+        memset(&config, 0, sizeof(anki_vehicle_light_config_t));
+        anki_vehicle_light_config(&config, LIGHT_BLUE, EFFECT_STEADY, intensity, intensity, cycles_per_min);
+        uint8_t append_size = anki_vehicle_msg_lights_pattern_append(&msg, &config);
+        ASSERT_EQ(append_size, sizeof(config));
+        ASSERT_EQ(msg.channel_count, 3);
+    }
+
+    uint8_t expected[18] = {
+        0x11, 0x33,
+        0x03,
+        0x00, 0x00, 0x00, 0x00, 0x00,
+        0x03, 0x00, 0x00, 0x00, 0x00,
+        0x02, 0x00, 0x0e, 0x0e, 0x00
+    };
+
+    ASSERT_BYTES_EQ(&msg, expected, sizeof(expected));
+    PASS();
+}
+
+TEST test_lights_pattern(void) {
+    anki_vehicle_msg_lights_pattern_t msg;
+    memset(&msg, 0, sizeof(anki_vehicle_msg_lights_pattern_t));
+
+    uint8_t intensity = ANKI_VEHICLE_MAX_LIGHT_INTENSITY;
+    uint8_t cycles_per_min = 6;
+
+    anki_vehicle_light_config_t config;
+    {
+        memset(&config, 0, sizeof(anki_vehicle_light_config_t));
+        anki_vehicle_light_config(&config, LIGHT_RED, EFFECT_THROB, 0, intensity, cycles_per_min);
+        uint8_t append_size = anki_vehicle_msg_lights_pattern_append(&msg, &config);
+        ASSERT_EQ(append_size, sizeof(config));
+        ASSERT_EQ(msg.channel_count, 1);
+    }
+    {
+        memset(&config, 0, sizeof(anki_vehicle_light_config_t));
+        anki_vehicle_light_config(&config, LIGHT_GREEN, EFFECT_THROB, 0, ANKI_VEHICLE_MAX_LIGHT_INTENSITY, cycles_per_min);
+        uint8_t append_size = anki_vehicle_msg_lights_pattern_append(&msg, &config);
+        ASSERT_EQ(append_size, sizeof(config));
+        ASSERT_EQ(msg.channel_count, 2);
+    }
+    {
+        memset(&config, 0, sizeof(anki_vehicle_light_config_t));
+        anki_vehicle_light_config(&config, LIGHT_BLUE, EFFECT_THROB, 0, ANKI_VEHICLE_MAX_LIGHT_INTENSITY, cycles_per_min);
+        uint8_t append_size = anki_vehicle_msg_lights_pattern_append(&msg, &config);
+        ASSERT_EQ(append_size, sizeof(config));
+        ASSERT_EQ(msg.channel_count, 3);
+    }
+
+    ASSERT_EQ(msg.msg_id, ANKI_VEHICLE_MSG_C2V_LIGHTS_PATTERN);
+    ASSERT_EQ(msg.size, ANKI_VEHICLE_MSG_C2V_LIGHTS_PATTERN_SIZE);
+
+    ASSERT_EQ(msg.channel_config[0].channel, LIGHT_RED);
+    ASSERT_EQ(msg.channel_config[1].channel, LIGHT_GREEN);
+    ASSERT_EQ(msg.channel_config[2].channel, LIGHT_BLUE);
+
+    PASS();
+}
+
 TEST test_disconnect(void) {
     anki_vehicle_msg_t msg;
     anki_vehicle_msg_disconnect(&msg);
@@ -114,6 +218,9 @@ GREATEST_SUITE(vehicle_protocol) {
     RUN_TEST(test_set_speed);
     RUN_TEST(test_set_offset_from_center);
     RUN_TEST(test_change_lane);
+    RUN_TEST(test_light_config);
+    RUN_TEST(test_lights_pattern);
+    RUN_TEST(test_lights_steady_blue);
     RUN_TEST(test_disconnect);
     RUN_TEST(test_get_version);
     RUN_TEST(test_get_battery_level);
