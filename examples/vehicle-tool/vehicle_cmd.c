@@ -718,21 +718,24 @@ static void cmd_anki_vehicle_lights_pattern(int argcp, char **argvp)
 
 static void vehicle_set_rgb_lights(int handle, uint8_t effect, uint8_t start_red, uint8_t end_red, uint8_t start_green, uint8_t end_green, uint8_t start_blue, uint8_t end_blue, uint16_t cycles_per_min)
 {
-        anki_vehicle_msg_t msg_red;
-        size_t plen_red = anki_vehicle_msg_lights_pattern(&msg_red, LIGHT_RED, effect, start_red, end_red, cycles_per_min);
+        anki_vehicle_msg_lights_pattern_t msg;
 
-        anki_vehicle_msg_t msg_green;
-        size_t plen_green = anki_vehicle_msg_lights_pattern(&msg_green, LIGHT_GREEN, effect, start_green, end_green, cycles_per_min);
+        anki_vehicle_light_config_t red_config;
+        anki_vehicle_light_config(&red_config, LIGHT_RED, effect, start_red, end_red, cycles_per_min);
+        anki_vehicle_msg_lights_pattern_append(&msg, &red_config);
 
-        anki_vehicle_msg_t msg_blue;
-        size_t plen_blue = anki_vehicle_msg_lights_pattern(&msg_blue, LIGHT_BLUE, effect, start_blue, end_blue, cycles_per_min);
+        anki_vehicle_light_config_t green_config;
+        anki_vehicle_light_config(&green_config, LIGHT_GREEN, effect, start_green, end_green, cycles_per_min);
+        anki_vehicle_msg_lights_pattern_append(&msg, &green_config);
 
-        uint8_t *value = (uint8_t *)&msg_red;
-        gatt_write_char(attrib, handle, value, plen_red, NULL, NULL);
-        value = (uint8_t *)&msg_green;
-        gatt_write_char(attrib, handle, value, plen_green, NULL, NULL);
-        value = (uint8_t *)&msg_blue;
-        gatt_write_char(attrib, handle, value, plen_blue, NULL, NULL);
+        anki_vehicle_light_config_t blue_config;
+        anki_vehicle_light_config(&blue_config, LIGHT_BLUE, effect, start_blue, end_blue, cycles_per_min);
+        anki_vehicle_msg_lights_pattern_append(&msg, &blue_config);
+
+        uint8_t *value = (uint8_t *)&msg;
+        size_t plen = sizeof(msg);
+
+        gatt_write_char(attrib, handle, value, plen, NULL, NULL);
 }
 
 static void cmd_anki_vehicle_engine_lights(int argcp, char **argvp)
@@ -762,10 +765,20 @@ static void cmd_anki_vehicle_engine_lights(int argcp, char **argvp)
         uint16_t cycles_per_min = atoi(argvp[5]);
 
         int handle = vehicle.write_char.value_handle;
-        if (effect == EFFECT_STEADY) {
-            vehicle_set_rgb_lights(handle, effect, r, r, g, g, b, b, 0); 
-        } else {
-            vehicle_set_rgb_lights(handle, effect, 0, r, 0, g, b, 0, cycles_per_min); 
+        rl_printf("%s: %u %u %u @ %u cycles/min\n", argvp[4], r, g, b, cycles_per_min);
+
+        switch(effect) {
+            case EFFECT_RANDOM:
+            case EFFECT_STEADY:
+                vehicle_set_rgb_lights(handle, effect, r, r, g, g, b, b, 0); 
+                break;
+            case EFFECT_FLASH:
+            case EFFECT_THROB:
+                vehicle_set_rgb_lights(handle, effect, 0, r, 0, g, 0, b, cycles_per_min); 
+                break;
+            case EFFECT_FADE:
+                vehicle_set_rgb_lights(handle, effect, r, 0, g, 0, b, 0, cycles_per_min); 
+                break;
         }
 }
 

@@ -50,12 +50,13 @@ void hexdump(const char *prefix, const size_t column_len, const void *value, siz
     int i;
 
     size_t slen = column_len*3;
-    char s[slen];
+    char* s = malloc(slen * sizeof(char));
     for (i = 0; i < row_count; ++i) {
-        memset(s, 0, column_len*3);
+        memset(s, 0, slen);
         bytes_to_hex(value, len, (char **)&s);
         printf("%s %s\n", prefix, s);
     }
+    free(s);
 }
 
 

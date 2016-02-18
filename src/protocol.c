@@ -94,7 +94,61 @@ uint8_t anki_vehicle_msg_set_lights(anki_vehicle_msg_t *message, uint8_t mask)
     return sizeof(anki_vehicle_msg_set_lights_t);
 }
 
-uint8_t anki_vehicle_msg_lights_pattern(anki_vehicle_msg_t *message, uint8_t channel, uint8_t effect, uint8_t start, uint8_t end, uint16_t cycles_per_min)
+void anki_vehicle_light_config(anki_vehicle_light_config_t *config,
+                               anki_vehicle_light_channel_t channel,
+                               anki_vehicle_light_effect_t effect,
+                               uint8_t start,
+                               uint8_t end,
+                               uint16_t cycles_per_min)
+{
+    assert(config != NULL);
+    config->channel = channel;
+    config->effect = effect;
+    config->start = (start > ANKI_VEHICLE_MAX_LIGHT_INTENSITY) ? ANKI_VEHICLE_MAX_LIGHT_INTENSITY : start;
+    config->end = (end > ANKI_VEHICLE_MAX_LIGHT_INTENSITY) ? ANKI_VEHICLE_MAX_LIGHT_INTENSITY : end;
+    uint16_t cpm = cycles_per_min > ANKI_VEHICLE_MAX_LIGHT_TIME ? ANKI_VEHICLE_MAX_LIGHT_TIME : cycles_per_min;
+    config->cycles_per_10_sec = (uint8_t)(cpm / 6);
+}
+
+uint8_t anki_vehicle_msg_lights_pattern_append(anki_vehicle_msg_lights_pattern_t* msg,
+                                               anki_vehicle_light_config_t* config)
+{
+    assert(msg != NULL);
+    assert(config != NULL);
+
+    if (    (msg->msg_id != ANKI_VEHICLE_MSG_C2V_LIGHTS_PATTERN)
+         || (msg->size != ANKI_VEHICLE_MSG_C2V_LIGHTS_PATTERN_SIZE)
+         || (msg->channel_count == 0)) {
+        memset(msg, 0, sizeof(anki_vehicle_msg_lights_pattern_t));
+    }
+
+    uint8_t next_index = msg->channel_count;
+    if (next_index >= LIGHT_CHANNEL_COUNT_MAX) {
+        return 0;
+    }
+
+    msg->size = ANKI_VEHICLE_MSG_C2V_LIGHTS_PATTERN_SIZE;
+    msg->msg_id = ANKI_VEHICLE_MSG_C2V_LIGHTS_PATTERN;
+
+    anki_vehicle_light_config_t* target = &(msg->channel_config[next_index]);
+    const size_t len = sizeof(*config);
+    memmove(target, config, len);
+    (msg->channel_count)++;
+
+    return len;
+}
+
+/*
+uint8_t anki_vehicle_msg_lights_pattern(anki_vehicle_msg_t *message,
+                                        anki_vehicle_light_config_t* config,
+                                        uint8_t count)
+*/
+uint8_t anki_vehicle_msg_lights_pattern(anki_vehicle_msg_t* message,
+                                        anki_vehicle_light_channel_t channel,
+                                        anki_vehicle_light_effect_t effect,
+                                        uint8_t start,
+                                        uint8_t end,
+                                        uint16_t cycles_per_min)
 {
     assert(message != NULL);
 
@@ -102,13 +156,16 @@ uint8_t anki_vehicle_msg_lights_pattern(anki_vehicle_msg_t *message, uint8_t cha
     memset(msg, 0, sizeof(anki_vehicle_msg_lights_pattern_t));
     msg->size = ANKI_VEHICLE_MSG_C2V_LIGHTS_PATTERN_SIZE;
     msg->msg_id = ANKI_VEHICLE_MSG_C2V_LIGHTS_PATTERN;
-    msg->channel = channel;
-    msg->effect = effect;
-    msg->start = start;
-    msg->end = end;
-    msg->cycles_per_min = cycles_per_min;
 
-    return sizeof(anki_vehicle_msg_lights_pattern_t);
+    anki_vehicle_light_config_t config;
+    anki_vehicle_light_config(&config, channel, effect, start, end, cycles_per_min);
+
+    const uint8_t len = anki_vehicle_msg_lights_pattern_append(msg, &config);
+    if (len == 0) {
+        return 0;
+    }
+
+    return sizeof(*msg);
 }
 
 uint8_t anki_vehicle_msg_disconnect(anki_vehicle_msg_t *msg)
@@ -127,12 +184,41 @@ uint8_t anki_vehicle_msg_cancel_lane_change(anki_vehicle_msg_t *msg)
     return ANKI_VEHICLE_MSG_TYPE_SIZE;
 }
 
-uint8_t anki_vehicle_msg_turn_180(anki_vehicle_msg_t *msg)
+uint8_t anki_vehicle_msg_turn(anki_vehicle_msg_t *msg,
+                              anki_vehicle_turn_type_t type,
+                              anki_vehicle_turn_trigger_t trigger)
 {
     assert(msg != NULL);
-    msg->size = ANKI_VEHICLE_MSG_BASE_SIZE;
-    msg->msg_id = ANKI_VEHICLE_MSG_C2V_TURN_180;
-    return ANKI_VEHICLE_MSG_TYPE_SIZE;
+
+    anki_vehicle_msg_turn_t *m = (anki_vehicle_msg_turn_t *)msg;
+    memset(m, 0, sizeof(anki_vehicle_msg_turn_t));
+    m->size = ANKI_VEHICLE_MSG_BASE_SIZE;
+    m->msg_id = ANKI_VEHICLE_MSG_C2V_TURN;
+    m->type = (uint8_t)type;
+    m->trigger = (uint8_t)trigger;
+
+    return sizeof(anki_vehicle_msg_turn_t);
+}
+
+uint8_t anki_vehicle_msg_turn_180(anki_vehicle_msg_t *msg)
+{
+    return anki_vehicle_msg_turn(msg, VEHICLE_TURN_UTURN, VEHICLE_TURN_TRIGGER_IMMEDIATE);
+}
+
+uint8_t anki_vehicle_msg_set_config_params(anki_vehicle_msg_t* msg,
+                                           uint8_t super_code_parse_mask,
+                                           anki_track_material_t track_material)
+{
+    assert(msg != NULL);
+
+    anki_vehicle_msg_set_config_params_t* m = (anki_vehicle_msg_set_config_params_t*)msg;
+    memset(m, 0, sizeof(anki_vehicle_msg_set_config_params_t));
+    m->size = ANKI_VEHICLE_MSG_C2V_SET_CONFIG_PARAMS_SIZE;
+    m->msg_id = ANKI_VEHICLE_MSG_C2V_SET_CONFIG_PARAMS;
+    m->super_code_parse_mask = super_code_parse_mask;
+    m->track_material = track_material;
+
+    return sizeof(anki_vehicle_msg_set_config_params_t);
 }
 
 uint8_t anki_vehicle_msg_ping(anki_vehicle_msg_t *msg)

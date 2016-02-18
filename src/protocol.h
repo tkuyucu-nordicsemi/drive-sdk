@@ -51,17 +51,21 @@ enum {
     ANKI_VEHICLE_MSG_C2V_SET_SPEED = 0x24,
     ANKI_VEHICLE_MSG_C2V_CHANGE_LANE = 0x25,
     ANKI_VEHICLE_MSG_C2V_CANCEL_LANE_CHANGE = 0x26,
-    ANKI_VEHICLE_MSG_C2V_TURN_180 = 0x32,
-    ANKI_VEHICLE_MSG_C2V_SET_OFFSET_FROM_ROAD_CENTER = 0x2c,
+    ANKI_VEHICLE_MSG_C2V_TURN = 0x32,
 
-    // Vehicle position notifications
+    // Vehicle position updates
     ANKI_VEHICLE_MSG_V2C_LOCALIZATION_POSITION_UPDATE = 0x27,
     ANKI_VEHICLE_MSG_V2C_LOCALIZATION_TRANSITION_UPDATE = 0x29,
+    ANKI_VEHICLE_MSG_V2C_LOCALIZATION_INTERSECTION_UPDATE = 0x2a,
     ANKI_VEHICLE_MSG_V2C_VEHICLE_DELOCALIZED = 0x2b,
+    ANKI_VEHICLE_MSG_C2V_SET_OFFSET_FROM_ROAD_CENTER = 0x2c,
     ANKI_VEHICLE_MSG_V2C_OFFSET_FROM_ROAD_CENTER_UPDATE = 0x2d,
 
     // Light Patterns
     ANKI_VEHICLE_MSG_C2V_LIGHTS_PATTERN = 0x33,
+
+    // Vehicle Configuration Parameters
+    ANKI_VEHICLE_MSG_C2V_SET_CONFIG_PARAMS = 0x45,
 
     // SDK Mode
     ANKI_VEHICLE_MSG_C2V_SDK_MODE = 0x90,
@@ -111,9 +115,30 @@ typedef struct anki_vehicle_msg_set_speed {
     uint8_t     msg_id;
     int16_t     speed_mm_per_sec;  // mm/sec
     int16_t     accel_mm_per_sec2; // mm/sec^2
-    uint8_t     _reserved;
+    uint8_t     respect_road_piece_speed_limit;
 } ATTRIBUTE_PACKED anki_vehicle_msg_set_speed_t;
 #define ANKI_VEHICLE_MSG_C2V_SET_SPEED_SIZE  6
+
+typedef enum {
+  VEHICLE_TURN_NONE        = 0,
+  VEHICLE_TURN_LEFT        = 1,
+  VEHICLE_TURN_RIGHT       = 2,
+  VEHICLE_TURN_UTURN       = 3,
+  VEHICLE_TURN_UTURN_JUMP  = 4,
+} anki_vehicle_turn_type_t;
+
+typedef enum {
+  VEHICLE_TURN_TRIGGER_IMMEDIATE    = 0, // Run immediately
+  VEHICLE_TURN_TRIGGER_INTERSECTION = 1, // Run at the next intersection
+} anki_vehicle_turn_trigger_t;
+
+typedef struct anki_vehicle_msg_turn {
+    uint8_t     size;
+    uint8_t     msg_id;
+    uint8_t     type;
+    uint8_t     trigger;
+} ATTRIBUTE_PACKED anki_vehicle_msg_turn_t;
+#define ANKI_VEHICLE_MSG_C2V_TURN_SIZE 3
 
 typedef struct anki_vehicle_msg_set_offset_from_road_center {
     uint8_t     size;
@@ -133,30 +158,93 @@ typedef struct anki_vehicle_msg_change_lane {
 } ATTRIBUTE_PACKED anki_vehicle_msg_change_lane_t;
 #define ANKI_VEHICLE_MSG_C2V_CHANGE_LANE_SIZE    11
 
+//
+// Bitwise masks applied to parsing_flags
+//
+// determine how many bits per code were read
+#define PARSEFLAGS_MASK_NUM_BITS        0x0f
+
+// determine if the track has an inverted code scheme
+#define PARSEFLAGS_MASK_INVERTED_COLOR  0x80
+
+// determine if the the code has been reverse parsed
+#define PARSEFLAGS_MASK_REVERSE_PARSING 0x40
+
+// determine if the current driving dir is reversed
+#define PARSEFLAGS_MASK_REVERSE_DRIVING 0x20
+
 typedef struct anki_vehicle_msg_localization_position_update {
     uint8_t     size;
     uint8_t     msg_id;
-    uint8_t     _reserved[2];
+    uint8_t     location_id;
+    uint8_t     road_piece_id;
     float       offset_from_road_center_mm;
     uint16_t    speed_mm_per_sec;
-    uint8_t     is_clockwise;
+    uint8_t     parsing_flags;
+
+    /* ACK commands received */
+    uint8_t     last_recv_lane_change_cmd_id;
+    uint8_t     last_exec_lane_change_cmd_id;
+    uint16_t    last_desired_horizontal_speed_mm_per_sec;
+    uint16_t    last_desired_speed_mm_per_sec;
 } ATTRIBUTE_PACKED anki_vehicle_msg_localization_position_update_t;
-#define ANKI_VEHICLE_MSG_V2C_LOCALIZATION_POSITION_UPDATE_SIZE  10
+#define ANKI_VEHICLE_MSG_V2C_LOCALIZATION_POSITION_UPDATE_SIZE  16
+
+typedef enum anki_vehicle_driving_direction {
+    FORWARD = 0,
+    REVERSE = 1,
+} anki_vehicle_driving_direction_t;
 
 typedef struct anki_vehicle_msg_localization_transition_update {
     uint8_t     size;
     uint8_t     msg_id;
-    uint8_t     _reserved;
+    uint8_t     road_piece_idx;
+    uint8_t     road_piece_idx_prev;
     float       offset_from_road_center_mm;
-    uint8_t     is_clockwise;
+
+    uint8_t     driving_direction;
+
+    /* ACK commands received */
+    uint8_t     last_recv_lane_change_id;
+    uint8_t     last_exec_lane_change_id;
+    uint16_t    last_desired_horizontal_speed_mm_per_sec;
+    uint16_t    last_desired_speed_mm_per_sec;
+
+    /* track grade detection */
+    uint8_t     uphill_counter; 
+    uint8_t     downhill_counter; 
+
+    /* wheel displacement (cm) since last transition bar */
+    uint8_t     left_wheel_dist_cm;
+    uint8_t     right_wheel_dist_cm;
 } ATTRIBUTE_PACKED anki_vehicle_msg_localization_transition_update_t;
-#define ANKI_VEHICLE_MSG_V2C_LOCALIZATION_TRANSITION_UPDATE_SIZE  7
+#define ANKI_VEHICLE_MSG_V2C_LOCALIZATION_TRANSITION_UPDATE_SIZE    18 
+
+typedef enum {
+    INTERSECTION_CODE_ENTRY_FIRST,
+    INTERSECTION_CODE_EXIT_FIRST,
+    INTERSECTION_CODE_ENTRY_SECOND,
+    INTERSECTION_CODE_EXIT_SECOND,
+} anki_intersection_code_t;
+
+typedef struct anki_vehicle_msg_localization_intersection_update {
+    uint8_t     size;
+    uint8_t     msg_id;
+    uint8_t     road_piece_idx;
+    float       offset_from_road_center_mm;
+
+    uint8_t     driving_direction;
+    uint8_t     intersection_code;
+    uint8_t     intersection_turn;
+    uint8_t     is_exiting;
+} ATTRIBUTE_PACKED anki_vehicle_msg_localization_intersection_update_t;
+#define ANKI_VEHICLE_MSG_V2C_LOCALIZATION_INTERSECTION_UPDATE_SIZE    10 
 
 typedef struct anki_vehicle_msg_offset_from_road_center_update {
     uint8_t     size;
     uint8_t     msg_id;
     float       offset_from_road_center_mm;
-    uint8_t     _reserved;
+    uint8_t     lane_change_id;
 } ATTRIBUTE_PACKED anki_vehicle_msg_offset_from_road_center_update_t;
 #define ANKI_VEHICLE_MSG_V2C_OFFSET_FROM_ROAD_CENTER_UPDATE_SIZE  6
 
@@ -203,17 +291,39 @@ typedef enum {
     EFFECT_COUNT
 } anki_vehicle_light_effect_t;
 
-typedef struct anki_vehicle_msg_lights_pattern {
-    uint8_t     size;
-    uint8_t     msg_id;
+typedef struct anki_vehicle_light_config {
     uint8_t     channel;
     uint8_t     effect;
     uint8_t     start;
     uint8_t     end;
-    uint16_t    cycles_per_min;
-} ATTRIBUTE_PACKED anki_vehicle_msg_lights_pattern_t;
-#define ANKI_VEHICLE_MSG_C2V_LIGHTS_PATTERN_SIZE    7
+    uint8_t     cycles_per_10_sec;
+} ATTRIBUTE_PACKED anki_vehicle_light_config_t;
 
+#define LIGHT_CHANNEL_COUNT_MAX 3
+typedef struct anki_vehicle_msg_lights_pattern {
+    uint8_t                         size;
+    uint8_t                         msg_id;
+    uint8_t                         channel_count;
+    anki_vehicle_light_config_t     channel_config[LIGHT_CHANNEL_COUNT_MAX];
+} ATTRIBUTE_PACKED anki_vehicle_msg_lights_pattern_t;
+#define ANKI_VEHICLE_MSG_C2V_LIGHTS_PATTERN_SIZE    17
+
+typedef enum anki_track_material {
+    TRACK_MATERIAL_PLASTIC,
+    TRACK_MATERIAL_VINYL,
+} anki_track_material_t;
+
+#define SUPERCODE_NONE          0
+#define SUPERCODE_BOOST_JUMP    1
+#define SUPERCODE_ALL           (SUPERCODE_BOOST_JUMP)
+
+typedef struct anki_vehicle_msg_set_config_params {
+    uint8_t     size;
+    uint8_t     msg_id;
+    uint8_t     super_code_parse_mask;
+    uint8_t     track_material;
+} ATTRIBUTE_PACKED anki_vehicle_msg_set_config_params_t;
+#define ANKI_VEHICLE_MSG_C2V_SET_CONFIG_PARAMS_SIZE 3
 
 /**
  * Create a message for setting the SDK mode.
@@ -239,7 +349,9 @@ uint8_t anki_vehicle_msg_set_sdk_mode(anki_vehicle_msg_t *msg, uint8_t on, uint8
  *
  * @return size of bytes written to msg
  */
-uint8_t anki_vehicle_msg_set_speed(anki_vehicle_msg_t *msg, uint16_t speed_mm_per_sec, uint16_t accel_mm_per_sec2);
+uint8_t anki_vehicle_msg_set_speed(anki_vehicle_msg_t *msg,
+                                   uint16_t speed_mm_per_sec,
+                                   uint16_t accel_mm_per_sec2);
 
 /**
  * Create a message for setting vehicle's internal offset from road center.
@@ -290,6 +402,25 @@ uint8_t anki_vehicle_msg_change_lane(anki_vehicle_msg_t *msg,
 uint8_t anki_vehicle_msg_set_lights(anki_vehicle_msg_t *msg, uint8_t mask);
 
 /**
+ * Create a vehicle lights configuration.
+ *
+ * @param config A pointer to the light channel configuration.
+ * @param channel The target lights. See anki_vehicle_light_channel_t.
+ * @param effect The type of desired effect. See anki_vehicle_light_effect_t.
+ * @param start The starting intensity of the LED.
+ * @param end The end intensity of the LED.
+ * @param cycles_per_min The frequency repeated start->end transition phases (according to effect).
+ *
+ * @see anki_vehicle_light_channel_t, anki_vehicle_light_effect_t 
+ */
+void anki_vehicle_light_config(anki_vehicle_light_config_t *config,
+                               anki_vehicle_light_channel_t channel,
+                               anki_vehicle_light_effect_t effect,
+                               uint8_t start,
+                               uint8_t end,
+                               uint16_t cycles_per_min);
+
+/**
  * Create a message to set a vehicle lights pattern.
  *
  * @param msg A pointer to the vehicle message struct to be written.
@@ -303,7 +434,25 @@ uint8_t anki_vehicle_msg_set_lights(anki_vehicle_msg_t *msg, uint8_t mask);
  *
  * @see anki_vehicle_light_channel_t, anki_vehicle_light_effect_t 
  */
-uint8_t anki_vehicle_msg_lights_pattern(anki_vehicle_msg_t *message, uint8_t channel, uint8_t effect, uint8_t start, uint8_t end, uint16_t cycles_per_min);
+uint8_t anki_vehicle_msg_lights_pattern(anki_vehicle_msg_t *message,
+                                        anki_vehicle_light_channel_t channel,
+                                        anki_vehicle_light_effect_t effect,
+                                        uint8_t start,
+                                        uint8_t end,
+                                        uint16_t cycles_per_min);
+
+/**
+ * Create a message to set vehicle lights using light channel configurations.
+ *
+ * Up to 3 channel configurations can be added to a single lights_pattern message.
+ *
+ * @param message A pointer to the vehicle message struct to be written.
+ * @param config A pointer to the light channel config to append to the message.
+ *
+ * @return size of appended config object or zero if nothing was appended.
+ */
+uint8_t anki_vehicle_msg_lights_pattern_append(anki_vehicle_msg_lights_pattern_t* message,
+                                               anki_vehicle_light_config_t* config);
 
 /**
  * Create a message to request that the vehicle disconnect.
@@ -338,7 +487,7 @@ uint8_t anki_vehicle_msg_ping(anki_vehicle_msg_t *msg);
  *
  * @return size of bytes written to msg
  */
-uint8_t anki_vehicle_msg_get_version(anki_vehicle_msg_t *);
+uint8_t anki_vehicle_msg_get_version(anki_vehicle_msg_t *msg);
 
 /**
  * Create a message to request the vehicle battery level.
@@ -350,7 +499,7 @@ uint8_t anki_vehicle_msg_get_version(anki_vehicle_msg_t *);
  *
  * @return size of bytes written to msg
  */
-uint8_t anki_vehicle_msg_get_battery_level(anki_vehicle_msg_t *);
+uint8_t anki_vehicle_msg_get_battery_level(anki_vehicle_msg_t *msg);
 
 /**
  * Create a message to cancel a requested lane change.
@@ -362,13 +511,48 @@ uint8_t anki_vehicle_msg_get_battery_level(anki_vehicle_msg_t *);
 uint8_t anki_vehicle_msg_cancel_lane_change(anki_vehicle_msg_t *msg);
 
 /**
+ * Create a message to request a turn.
+ *
+ * @param msg A pointer to the vehicle message struct to be written.
+ * @param type Enum value specifying the type of turn to execute. (see `see anki_vehicle_turn_type_t`)
+ *             The default value is `VEHICLE_TURN_TYPE_NONE`, which is a no-op (no turn executed).
+ * @param trigger Enum value specifying when to execute the turn. (see `anki_vehicle_turn_trigger_t`)
+ *                The only supported value is currently `VEHICLE_TURN_TRIGGER_IMMEDIATE`,
+ *                which causes the turn to be executed immediately.
+ *
+ * @return size of bytes written to msg
+ */
+uint8_t anki_vehicle_msg_turn(anki_vehicle_msg_t *msg,
+                              anki_vehicle_turn_type_t type,
+                              anki_vehicle_turn_trigger_t trigger);
+
+/**
  * Create a message to request a 180 degree turn.
  *
  * @param msg A pointer to the vehicle message struct to be written.
  *
  * @return size of bytes written to msg
+ */                                                                                                 
+uint8_t anki_vehicle_msg_turn_180(anki_vehicle_msg_t *msg);  
+
+
+/**
+ * Create a message to set vehicle config parameters
+ *
+ * Specify parameters that modify scan-parsing or change the way that track codes are
+ * iterpreted.
+ *
+ * This message is experimental and may change in the future.
+ *
+ * @param msg A pointer to the vehicle message struct to be written.
+ * @param super_code_parse_mask Mask byte specifying super codes that should be parsed.
+ * @param track_material Enum value specifying the material on which codes are printed.
+ *
+ * @return size of bytes written to msg
  */
-uint8_t anki_vehicle_msg_turn_180(anki_vehicle_msg_t *msg);
+uint8_t anki_vehicle_msg_set_config_params(anki_vehicle_msg_t* msg,
+                                           uint8_t super_code_parse_mask,
+                                           anki_track_material_t track_material);
 
 ANKI_END_DECL
 
