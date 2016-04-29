@@ -99,6 +99,7 @@ static char *effects_by_name[] = { "STEADY", "FADE", "THROB", "FLASH", "RANDOM",
 static uint8_t effect_invalid = 0xff;
 static char *channels_by_name[] = { "RED", "TAIL", "BLUE", "GREEN", "FRONTL", "FRONTR", NULL };
 static uint8_t channel_invalid = 0xff;
+static char* turn_types_by_name[] = { "NONE", "LEFT", "RIGHT", "UTURN", "UTURN_JUMP", NULL };
 
 static void discover_services(void);
 static void cmd_help(int argcp, char **argvp);
@@ -782,6 +783,56 @@ static void cmd_anki_vehicle_engine_lights(int argcp, char **argvp)
         }
 }
 
+anki_vehicle_turn_type_t get_turn_type_by_name(const char *name)
+{
+        uint8_t i;
+        anki_vehicle_turn_type_t turn_type = VEHICLE_TURN_NONE;
+
+        if (name == NULL)
+            return turn_type;
+
+        uint8_t count = sizeof(turn_types_by_name)/sizeof(turn_types_by_name[0]);
+        for (i = 0; i < count; i++) {
+                if (strncmp(name, turn_types_by_name[i], sizeof(turn_types_by_name[i])) == 0) {
+                    turn_type = (anki_vehicle_turn_type_t)i;
+                    break;
+                }
+        }
+
+        return turn_type;
+}
+
+static void vehicle_turn(int handle, anki_vehicle_turn_type_t turn_type)
+{
+        anki_vehicle_msg_t msg;
+        size_t plen = anki_vehicle_msg_turn(&msg, turn_type, VEHICLE_TURN_TRIGGER_IMMEDIATE);
+
+        uint8_t *value = (uint8_t *)&msg;
+
+        gatt_write_char(attrib, handle, value, plen, NULL, NULL);
+}
+
+static void cmd_anki_vehicle_turn(int argcp, char **argvp)
+{
+        if (conn_state != STATE_CONNECTED) {
+                failed("Disconnected\n");
+                return;
+        }
+
+        if (argcp < 2) {
+                rl_printf("Usage: %s <type>\n", argvp[0]);
+                rl_printf("   turn type: UTURN, LEFT, RIGHT\n");
+                return;
+        }
+
+
+        anki_vehicle_turn_type_t turn_type = get_turn_type_by_name(argvp[1]);
+        rl_printf("%s: %s (%u)\n", argvp[0], argvp[1], turn_type);
+
+        int handle = vehicle.write_char.value_handle;
+        vehicle_turn(handle, turn_type); 
+}
+
 static void exchange_mtu_cb(guint8 status, const guint8 *pdu, guint16 plen,
 							gpointer user_data)
 {
@@ -871,6 +922,8 @@ static struct {
                 "Set lights pattern for vehicle LEDs."},
         { "set-engine-lights",          cmd_anki_vehicle_engine_lights,  "<red> <green> <blue> <effect> <cycles_per_min>",
                 "Set the pattern for the engine lights."},
+        { "turn",          cmd_anki_vehicle_turn,  "<type>",
+                "Execute a turn of type UTURN, LEFT, RIGHT"},
         { "vehicle-disconnect",          cmd_anki_vehicle_disconnect,  "",
                 "Request that the vehicle disconnect (often more reliable than disconnect)"},
 	{ "send-data-req",	cmd_anki_vehicle_write,	"<new value>",
