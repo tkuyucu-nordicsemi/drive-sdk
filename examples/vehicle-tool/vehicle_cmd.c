@@ -1,4 +1,29 @@
 /*
+ *  vehicle-tool
+ *
+ *  Example vehicle control tool for Anki Drive SDK
+ *
+ *  Copyright (C) 2014 Anki, Inc.
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ *  Portions of this software are derived from BlueZ, a Bluetooth protocol stack for
+ *  Linux. The license for BlueZ is included below.
+ */
+
+/*
  *
  *  BlueZ - Bluetooth protocol stack for Linux
  *
@@ -38,13 +63,13 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-#include "lib/uuid.h"
-#include <btio/btio.h>
-#include "att.h"
-#include "gattrib.h"
-#include "gatt.h"
-#include "utils.h"
-#include "client/display.h"
+#include <bzle/bluetooth/uuid.h>
+#include <bzle/bluetooth/btio.h>
+#include <bzle/gatt/att.h>
+#include <bzle/gatt/gattrib.h>
+#include <bzle/gatt/gatt.h>
+#include <bzle/gatt/utils.h>
+#include "display.h"
 
 #include <ankidrive.h>
 
@@ -74,6 +99,7 @@ static char *effects_by_name[] = { "STEADY", "FADE", "THROB", "FLASH", "RANDOM",
 static uint8_t effect_invalid = 0xff;
 static char *channels_by_name[] = { "RED", "TAIL", "BLUE", "GREEN", "FRONTL", "FRONTR", NULL };
 static uint8_t channel_invalid = 0xff;
+static char* turn_types_by_name[] = { "NONE", "LEFT", "RIGHT", "UTURN", "UTURN_JUMP", NULL };
 
 static void discover_services(void);
 static void cmd_help(int argcp, char **argvp);
@@ -202,7 +228,7 @@ static void disconnect_io()
 	set_state(STATE_DISCONNECTED);
 }
 
-static void discover_char_cb(GSList *characteristics, guint8 status, gpointer user_data)
+static void discover_char_cb(guint8 status, GSList *characteristics, gpointer user_data)
 {
 	GSList *l;
 
@@ -317,8 +343,7 @@ static void cmd_disconnect(int argcp, char **argvp)
 }
 
 // Discover Services
-static void discover_services_cb(GSList *ranges, guint8 status,
-                                                        gpointer user_data)
+static void discover_services_cb(guint8 status, GSList *ranges, gpointer user_data)
 {
         GSList *l;
 
@@ -489,7 +514,7 @@ static void cmd_anki_vehicle_sdk_mode(int argcp, char **argvp)
         int arg = atoi(argvp[1]);
 
         anki_vehicle_msg_t msg;
-        plen = anki_vehicle_msg_set_sdk_mode(&msg, arg);
+        plen = anki_vehicle_msg_set_sdk_mode(&msg, arg, ANKI_VEHICLE_SDK_OPTION_OVERRIDE_LOCALIZATION);
         value = (uint8_t *)&msg;
 
         gatt_write_char(attrib, handle, value, plen,
@@ -586,26 +611,27 @@ static void cmd_anki_vehicle_change_lane(int argcp, char **argvp)
                 return;
         }
 
-        if (argcp < 2) {
-                rl_printf("Usage: %s <horizontal speed (mm/sec)> <offset (mm)>\n", argvp[0]);
+        if (argcp < 3) {
+                rl_printf("Usage: %s <horizontal speed (mm/sec)> <horizontal accel (mm/sec^2)> <offset (mm)>\n", argvp[0]);
                 return;
         }
 
         int handle = vehicle.write_char.value_handle;
 
         int16_t hspeed = (int16_t)atoi(argvp[1]);
+        int16_t haccel = (int16_t)atoi(argvp[2]);
         float offset = 1.0;
-        if (argcp > 2) {
-            offset = strtof(argvp[2], NULL);
+        if (argcp > 3) {
+            offset = strtof(argvp[3], NULL);
         }
-        rl_printf("changing lane at %d (offset = %1.2f)\n", hspeed, offset);
+        rl_printf("changing lane at %d (accel = %d | offset = %1.2f)\n", hspeed, haccel, offset);
 
         anki_vehicle_msg_t msg;
         size_t plen = anki_vehicle_msg_set_offset_from_road_center(&msg, 0.0);
         gatt_write_char(attrib, handle, (uint8_t*)&msg, plen, NULL, NULL);
 
         anki_vehicle_msg_t lane_msg;
-        size_t lane_plen = anki_vehicle_msg_change_lane(&lane_msg, hspeed, offset);
+        size_t lane_plen = anki_vehicle_msg_change_lane(&lane_msg, hspeed, haccel, offset);
         gatt_write_char(attrib, handle, (uint8_t*)&lane_msg, lane_plen, NULL, NULL);
 }
 
@@ -693,21 +719,24 @@ static void cmd_anki_vehicle_lights_pattern(int argcp, char **argvp)
 
 static void vehicle_set_rgb_lights(int handle, uint8_t effect, uint8_t start_red, uint8_t end_red, uint8_t start_green, uint8_t end_green, uint8_t start_blue, uint8_t end_blue, uint16_t cycles_per_min)
 {
-        anki_vehicle_msg_t msg_red;
-        size_t plen_red = anki_vehicle_msg_lights_pattern(&msg_red, LIGHT_RED, effect, start_red, end_red, cycles_per_min);
+        anki_vehicle_msg_lights_pattern_t msg;
 
-        anki_vehicle_msg_t msg_green;
-        size_t plen_green = anki_vehicle_msg_lights_pattern(&msg_green, LIGHT_GREEN, effect, start_green, end_green, cycles_per_min);
+        anki_vehicle_light_config_t red_config;
+        anki_vehicle_light_config(&red_config, LIGHT_RED, effect, start_red, end_red, cycles_per_min);
+        anki_vehicle_msg_lights_pattern_append(&msg, &red_config);
 
-        anki_vehicle_msg_t msg_blue;
-        size_t plen_blue = anki_vehicle_msg_lights_pattern(&msg_blue, LIGHT_BLUE, effect, start_blue, end_blue, cycles_per_min);
+        anki_vehicle_light_config_t green_config;
+        anki_vehicle_light_config(&green_config, LIGHT_GREEN, effect, start_green, end_green, cycles_per_min);
+        anki_vehicle_msg_lights_pattern_append(&msg, &green_config);
 
-        uint8_t *value = (uint8_t *)&msg_red;
-        gatt_write_char(attrib, handle, value, plen_red, NULL, NULL);
-        value = (uint8_t *)&msg_green;
-        gatt_write_char(attrib, handle, value, plen_green, NULL, NULL);
-        value = (uint8_t *)&msg_blue;
-        gatt_write_char(attrib, handle, value, plen_blue, NULL, NULL);
+        anki_vehicle_light_config_t blue_config;
+        anki_vehicle_light_config(&blue_config, LIGHT_BLUE, effect, start_blue, end_blue, cycles_per_min);
+        anki_vehicle_msg_lights_pattern_append(&msg, &blue_config);
+
+        uint8_t *value = (uint8_t *)&msg;
+        size_t plen = sizeof(msg);
+
+        gatt_write_char(attrib, handle, value, plen, NULL, NULL);
 }
 
 static void cmd_anki_vehicle_engine_lights(int argcp, char **argvp)
@@ -737,11 +766,71 @@ static void cmd_anki_vehicle_engine_lights(int argcp, char **argvp)
         uint16_t cycles_per_min = atoi(argvp[5]);
 
         int handle = vehicle.write_char.value_handle;
-        if (effect == EFFECT_STEADY) {
-            vehicle_set_rgb_lights(handle, effect, r, r, g, g, b, b, 0); 
-        } else {
-            vehicle_set_rgb_lights(handle, effect, 0, r, 0, g, b, 0, cycles_per_min); 
+        rl_printf("%s: %u %u %u @ %u cycles/min\n", argvp[4], r, g, b, cycles_per_min);
+
+        switch(effect) {
+            case EFFECT_RANDOM:
+            case EFFECT_STEADY:
+                vehicle_set_rgb_lights(handle, effect, r, r, g, g, b, b, 0); 
+                break;
+            case EFFECT_FLASH:
+            case EFFECT_THROB:
+                vehicle_set_rgb_lights(handle, effect, 0, r, 0, g, 0, b, cycles_per_min); 
+                break;
+            case EFFECT_FADE:
+                vehicle_set_rgb_lights(handle, effect, r, 0, g, 0, b, 0, cycles_per_min); 
+                break;
         }
+}
+
+anki_vehicle_turn_type_t get_turn_type_by_name(const char *name)
+{
+        uint8_t i;
+        anki_vehicle_turn_type_t turn_type = VEHICLE_TURN_NONE;
+
+        if (name == NULL)
+            return turn_type;
+
+        uint8_t count = sizeof(turn_types_by_name)/sizeof(turn_types_by_name[0]);
+        for (i = 0; i < count; i++) {
+                if (strncmp(name, turn_types_by_name[i], sizeof(turn_types_by_name[i])) == 0) {
+                    turn_type = (anki_vehicle_turn_type_t)i;
+                    break;
+                }
+        }
+
+        return turn_type;
+}
+
+static void vehicle_turn(int handle, anki_vehicle_turn_type_t turn_type)
+{
+        anki_vehicle_msg_t msg;
+        size_t plen = anki_vehicle_msg_turn(&msg, turn_type, VEHICLE_TURN_TRIGGER_IMMEDIATE);
+
+        uint8_t *value = (uint8_t *)&msg;
+
+        gatt_write_char(attrib, handle, value, plen, NULL, NULL);
+}
+
+static void cmd_anki_vehicle_turn(int argcp, char **argvp)
+{
+        if (conn_state != STATE_CONNECTED) {
+                failed("Disconnected\n");
+                return;
+        }
+
+        if (argcp < 2) {
+                rl_printf("Usage: %s <type>\n", argvp[0]);
+                rl_printf("   turn type: UTURN, LEFT, RIGHT\n");
+                return;
+        }
+
+
+        anki_vehicle_turn_type_t turn_type = get_turn_type_by_name(argvp[1]);
+        rl_printf("%s: %s (%u)\n", argvp[0], argvp[1], turn_type);
+
+        int handle = vehicle.write_char.value_handle;
+        vehicle_turn(handle, turn_type); 
 }
 
 static void exchange_mtu_cb(guint8 status, const guint8 *pdu, guint16 plen,
@@ -827,12 +916,14 @@ static struct {
                 "Request vehicle software version."},
         { "set-speed",          cmd_anki_vehicle_set_speed,  "<speed> <accel>",
                 "Set vehicle Speed (mm/sec) with acceleration (mm/sec^2)"},
-        { "change-lane",          cmd_anki_vehicle_change_lane,  "<horizontal speed> <relative offset> (right(+), left(-))",
-                "Change lanes at speed (mm/sec) in the specified direction (offset)"},
+        { "change-lane",          cmd_anki_vehicle_change_lane,  "<horizontal speed> <horizontal accel> <relative offset> (right(+), left(-))",
+                "Change lanes at speed (mm/sec), accel (mm/sec^2) in the specified direction (offset)"},
         { "set-lights-pattern",          cmd_anki_vehicle_lights_pattern,  "<channel> <effect> <start> <end> <cycles_per_min>",
                 "Set lights pattern for vehicle LEDs."},
         { "set-engine-lights",          cmd_anki_vehicle_engine_lights,  "<red> <green> <blue> <effect> <cycles_per_min>",
                 "Set the pattern for the engine lights."},
+        { "turn",          cmd_anki_vehicle_turn,  "<type>",
+                "Execute a turn of type UTURN, LEFT, RIGHT"},
         { "vehicle-disconnect",          cmd_anki_vehicle_disconnect,  "",
                 "Request that the vehicle disconnect (often more reliable than disconnect)"},
 	{ "send-data-req",	cmd_anki_vehicle_write,	"<new value>",

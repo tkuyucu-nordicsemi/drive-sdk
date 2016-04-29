@@ -15,3 +15,8 @@ set(drivekit_SOURCES
 # file(GLOB drivekit_SOURCES *.cpp)
 
 add_library(ankidrive ${drivekit_SOURCES})
+
+install(TARGETS ankidrive
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
