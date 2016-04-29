@@ -192,7 +192,7 @@ uint8_t anki_vehicle_msg_turn(anki_vehicle_msg_t *msg,
 
     anki_vehicle_msg_turn_t *m = (anki_vehicle_msg_turn_t *)msg;
     memset(m, 0, sizeof(anki_vehicle_msg_turn_t));
-    m->size = ANKI_VEHICLE_MSG_BASE_SIZE;
+    m->size = ANKI_VEHICLE_MSG_C2V_TURN_SIZE;
     m->msg_id = ANKI_VEHICLE_MSG_C2V_TURN;
     m->type = (uint8_t)type;
     m->trigger = (uint8_t)trigger;

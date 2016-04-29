@@ -138,6 +138,21 @@ TEST test_lights_steady_blue(void) {
     PASS();
 }
 
+TEST test_turn_180(void) {
+    anki_vehicle_msg_t msg;
+    memset(&msg, 0, sizeof(anki_vehicle_msg_turn_t));
+
+    uint8_t size = anki_vehicle_msg_turn(&msg, VEHICLE_TURN_UTURN, VEHICLE_TURN_TRIGGER_IMMEDIATE);
+    ASSERT_EQ(size, sizeof(anki_vehicle_msg_turn_t));
+
+    uint8_t expect[4] = { ANKI_VEHICLE_MSG_C2V_TURN_SIZE,
+                          ANKI_VEHICLE_MSG_C2V_TURN,
+                          VEHICLE_TURN_UTURN,
+                          VEHICLE_TURN_TRIGGER_IMMEDIATE };
+    ASSERT_BYTES_EQ(&msg, expect, 4);
+    PASS();
+}
+
 TEST test_lights_pattern(void) {
     anki_vehicle_msg_lights_pattern_t msg;
     memset(&msg, 0, sizeof(anki_vehicle_msg_lights_pattern_t));
@@ -221,6 +236,7 @@ GREATEST_SUITE(vehicle_protocol) {
     RUN_TEST(test_light_config);
     RUN_TEST(test_lights_pattern);
     RUN_TEST(test_lights_steady_blue);
+    RUN_TEST(test_turn_180);
     RUN_TEST(test_disconnect);
     RUN_TEST(test_get_version);
     RUN_TEST(test_get_battery_level);
